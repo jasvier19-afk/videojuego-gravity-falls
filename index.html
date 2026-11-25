@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Gravity Falls 3D: El Misterio del Diario</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <!-- Three.js (versión compatible tanto con servidor local como con apertura directa) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/build/three.min.js"></script>
+</head>
+<body>
+  <!-- Lienzo 3D principal -->
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+  </div>
+
+  <!-- HUD en juego -->
+  <div id="hud" class="hidden">
+    <div class="hud-top">
+      <div class="hud-panel hud-character">
+        <div id="char-avatar" class="char-avatar char-dipper">D</div>
+        <div class="char-info">
+          <div id="char-name" class="char-name">Dipper Pines</div>
+          <div id="health-bar" class="health-bar" aria-label="Vida">
+            <!-- Corazones generados dinámicamente -->
+          </div>
+          <div id="char-ability" class="char-ability">Linterna / Diario #3</div>
+        </div>
+      </div>
+
+      <div class="hud-panel hud-objective">
+        <div class="objective-label">MISTERIO ACTUAL</div>
+        <div id="objective-text" class="objective-text">Explora la Cabaña del Misterio</div>
+      </div>
+
+      <div class="hud-panel hud-stats">
+        <div class="stat-item">
+          <span class="stat-icon">📖</span>
+          <span id="pages-count">0/6</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">🪙</span>
+          <span id="score-count">0</span>
+        </div>
+        <div class="hud-actions-mini">
+          <button id="btn-audio" class="icon-btn" title="Música y Sonido" aria-label="Alternar audio">🔊</button>
+          <button id="btn-touch-toggle" class="icon-btn" title="Controles táctiles" aria-label="Alternar controles táctiles">🎮</button>
+          <button id="btn-pause" class="icon-btn" title="Pausa" aria-label="Pausar juego">⏸️</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Selector rápido de personajes -->
+    <div id="char-switcher" class="char-switcher">
+      <button class="switch-btn active" data-char="dipper" title="Dipper Pines (Tecla 1)">
+        <span class="badge-key">1</span>🌲 Dipper
+      </button>
+      <button class="switch-btn" data-char="mabel" title="Mabel Pines (Tecla 2)">
+        <span class="badge-key">2</span>🌠 Mabel
+      </button>
+      <button class="switch-btn" data-char="stan" title="Stanley Pines (Tecla 3)">
+        <span class="badge-key">3</span>🎩 Stan
+      </button>
+      <button class="switch-btn" data-char="wendy" title="Wendy Corduroy (Tecla 4)">
+        <span class="badge-key">4</span>🪓 Wendy
+      </button>
+    </div>
+
+    <!-- Indicador de interacción contextual -->
+    <div id="interact-prompt" class="interact-prompt hidden">
+      Pulsa <kbd>E</kbd> o <strong>Interactuar</strong>
+    </div>
+
+    <!-- Controles táctiles para móviles y tabletas -->
+    <div id="touch-controls" class="touch-controls hidden">
+      <div class="dpad" aria-label="Controles direccionales">
+        <button class="dpad-btn dpad-up" data-dir="up" aria-label="Arriba">▲</button>
+        <button class="dpad-btn dpad-left" data-dir="left" aria-label="Izquierda">◀</button>
+        <div class="dpad-center">🌲</div>
+        <button class="dpad-btn dpad-right" data-dir="right" aria-label="Derecha">▶</button>
+        <button class="dpad-btn dpad-down" data-dir="down" aria-label="Abajo">▼</button>
+      </div>
+
+      <div class="action-pad" aria-label="Botones de acción">
+        <button id="touch-interact" class="action-btn btn-interact" aria-label="Interactuar">🔍<span>Usar</span></button>
+        <button id="touch-attack" class="action-btn btn-attack" aria-label="Atacar">⚡<span>Atacar</span></button>
+        <button id="touch-jump" class="action-btn btn-jump" aria-label="Saltar">⬆️<span>Saltar</span></button>
+        <button id="touch-swap" class="action-btn btn-swap" aria-label="Cambiar personaje">🔄<span>Héroe</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cuadro de diálogo e historia -->
+  <div id="dialogue-box" class="dialogue-box hidden">
+    <div class="dialogue-portrait" id="dialogue-portrait">📖</div>
+    <div class="dialogue-content">
+      <div class="dialogue-speaker" id="dialogue-speaker">Dipper Pines</div>
+      <p class="dialogue-text" id="dialogue-text">¡Algo extraño está pasando en el bosque!</p>
+      <button id="dialogue-next" class="btn-primary btn-small">Continuar ▸</button>
+    </div>
+  </div>
+
+  <!-- Pantalla de Inicio -->
+  <div id="start-screen" class="overlay-screen">
+    <div class="journal-card">
+      <div class="journal-badge">DIARIO #3 • EDICIÓN 3D</div>
+      <h1 class="game-title">GRAVITY FALLS</h1>
+      <p class="game-subtitle">El Misterio del Portal Sobrenatural</p>
+
+      <div class="hero-preview-row">
+        <div class="hero-chip" data-pick="dipper">
+          <span class="hero-emoji">🌲</span>
+          <strong>Dipper</strong>
+          <small>Ágil y detector de pistas</small>
+        </div>
+        <div class="hero-chip" data-pick="mabel">
+          <span class="hero-emoji">🌠</span>
+          <strong>Mabel</strong>
+          <small>Doble salto con gancho</small>
+        </div>
+        <div class="hero-chip" data-pick="stan">
+          <span class="hero-emoji">🎩</span>
+          <strong>Tío Stan</strong>
+          <small>Golpe fuerte con bastón</small>
+        </div>
+        <div class="hero-chip" data-pick="wendy">
+          <span class="hero-emoji">🪓</span>
+          <strong>Wendy</strong>
+          <small>Velocidad y hacha</small>
+        </div>
+      </div>
+
+      <div class="controls-guide">
+        <div><strong>💻 PC:</strong> Flechas direccionales para moverte • <kbd>Espacio</kbd> Saltar • <strong>Clic izquierdo</strong> Atacar • <kbd>E</kbd> Interactuar • <kbd>1-4</kbd> Cambiar héroe</div>
+        <div><strong>📱 Móvil / Tablet:</strong> Cruceta táctil y botones en pantalla</div>
+      </div>
+
+      <div class="settings-row">
+        <label for="quality-select">Calidad gráfica:</label>
+        <select id="quality-select">
+          <option value="high">Alta (Sombras y detalles)</option>
+          <option value="medium" selected>Media (Equilibrada)</option>
+          <option value="low">Baja (Máximo FPS)</option>
+        </select>
+      </div>
+
+      <button id="btn-start" class="btn-primary btn-large">¡COMENZAR AVENTURA!</button>
+    </div>
+  </div>
+
+  <!-- Pantalla de Pausa -->
+  <div id="pause-screen" class="overlay-screen hidden">
+    <div class="journal-card compact">
+      <h2>PAUSA</h2>
+      <p>El tiempo en Gravity Falls se ha detenido.</p>
+      <div class="modal-buttons">
+        <button id="btn-resume" class="btn-primary">Reanudar</button>
+        <button id="btn-restart-pause" class="btn-secondary">Reiniciar Aventura</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pantalla de Victoria / Fin de Juego -->
+  <div id="end-screen" class="overlay-screen hidden">
+    <div class="journal-card compact">
+      <div id="end-badge" class="journal-badge">MISTERIO RESUELTO</div>
+      <h2 id="end-title">¡Portal Sellado!</h2>
+      <p id="end-desc">Dipper, Mabel, Stan y Wendy salvaron Gravity Falls.</p>
+      <div class="end-stats">
+        <div>Puntuación final: <strong id="final-score">0</strong></div>
+        <div>Páginas del Diario: <strong id="final-pages">0/6</strong></div>
+      </div>
+      <button id="btn-play-again" class="btn-primary">Jugar de nuevo</button>
+    </div>
+  </div>
+
+  <!-- Scripts modulares -->
+  <script src="js/audio.js"></script>
+  <script src="js/controls.js"></script>
+  <script src="js/characters.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
